@@ -1,0 +1,184 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+}
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  password     String
+  role         Role     @default(CUSTOMER)
+  phone        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  vendor        Vendor?
+  events        Event[]
+  notifications Notification[]
+  shortlist     ShortlistItem[]
+}
+
+model Vendor {
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName String
+  description  String?
+  location     String
+  isApproved   Boolean   @default(false)
+  coverImage   String?
+  logoImage    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  categories   VendorCategory[]
+  services     VendorService[]
+  portfolio    PortfolioImage[]
+  shortlistedBy ShortlistItem[]
+}
+
+model Category {
+  id     String @id @default(uuid())
+  name   String @unique
+  slug   String @unique
+
+  vendors VendorCategory[]
+}
+
+model VendorCategory {
+  vendorId   String
+  categoryId String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([vendorId, categoryId])
+}
+
+model VendorService {
+  id          String   @id @default(uuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+
+  packages    ServicePackage[]
+}
+
+model ServicePackage {
+  id              String   @id @default(uuid())
+  vendorServiceId String
+  vendorService   VendorService @relation(fields: [vendorServiceId], references: [id], onDelete: Cascade)
+  name            String
+  price           Decimal  @db.Decimal(10, 2)
+  description     String?
+
+  eventServices   EventService[]
+}
+
+model PortfolioImage {
+  id       String @id @default(uuid())
+  vendorId String
+  vendor   Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  imageUrl String
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  customerId  String
+  customer    User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name        String
+  eventType   String
+  eventDate   DateTime
+  location    String
+  guestCount  Int?
+  budget      Decimal  @db.Decimal(10, 2)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  eventServices EventService[]
+}
+
+model EventService {
+  id               String   @id @default(uuid())
+  eventId          String
+  event            Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  servicePackageId String
+  servicePackage   ServicePackage @relation(fields: [servicePackageId], references: [id])
+  createdAt        DateTime @default(now())
+
+  booking          Booking?
+}
+
+model Booking {
+  id             String        @id @default(uuid())
+  eventServiceId String        @unique
+  eventService   EventService  @relation(fields: [eventServiceId], references: [id], onDelete: Cascade)
+  status         BookingStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  payments       Payment[]
+  review         Review?
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount    Decimal  @db.Decimal(10, 2)
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  bookingId String   @unique
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ShortlistItem {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, vendorId])
+}
+enum Role {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
