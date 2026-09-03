@@ -3,6 +3,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 import healthRoutes from "./src/routes/health.routes.js";
+import authRoutes from "./src/routes/auth.routes.js"; 
+import vendorRoutes from "./src/routes/vendor.routes.js";
+import eventRoutes from "./src/routes/event.routes.js";
+import vendorServiceRoutes from "./src/routes/vendorService.routes.js";
 import { notFound, errorHandler } from "./src/middleware/errorHandler.js";
 
 dotenv.config();
@@ -16,6 +20,10 @@ app.use(express.json());
 
 // Routes
 app.use("/api/health", healthRoutes);
+app.use("/api/auth", authRoutes); 
+app.use("/api/vendors", vendorRoutes);  
+app.use("/api/events", eventRoutes);  
+app.use("/api/vendor-services", vendorServiceRoutes); 
 
 // 404 + error handling (must be last, in this order)
 app.use(notFound);
